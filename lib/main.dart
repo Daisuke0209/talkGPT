@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 // Package imports:
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:new_gradient_app_bar/new_gradient_app_bar.dart';
 import 'package:openai_client/openai_client.dart';
 import 'package:openai_client/src/model/openai_chat/chat_message.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
@@ -72,9 +73,11 @@ class _talkGPTAppState extends State<talkGPTApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('talkGPT'),
-        ),
+        appBar: NewGradientAppBar(
+            title: const Text('talkGPT'),
+            gradient: LinearGradient(
+              colors: [Colors.red.shade300, Colors.deepPurple.shade300],
+            )),
         body: Column(children: [
           Container(
             child: Column(
@@ -88,7 +91,7 @@ class _talkGPTAppState extends State<talkGPTApp> {
             flex: 4,
             child: RecognitionResultsWidget(lastWords: lastWords, level: level),
           ),
-          Expanded(flex: 4, child: chatGPTResponseWidget(lastWords: lastWords))
+          Expanded(flex: 5, child: chatGPTResponseWidget(lastWords: lastWords))
         ]),
       ),
     );
