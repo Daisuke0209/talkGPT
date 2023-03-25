@@ -1,25 +1,30 @@
+// Dart imports:
 import 'dart:async';
-import 'dart:math';
 import 'dart:io' show Platform;
+import 'dart:math';
 
+// Flutter imports:
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+
+// Package imports:
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:openai_client/openai_client.dart';
+import 'package:openai_client/src/model/openai_chat/chat_message.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-import 'package:openai_client/openai_client.dart';
-import 'package:openai_client/src/model/openai_chat/chat_message.dart';
-import 'package:flutter_tts/flutter_tts.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
-import 'package:http/http.dart' as http;
-
+// Project imports:
 import 'credential.dart';
 
 enum TtsState { playing, stopped, paused, continued }
 
-void main() => runApp(SpeechSampleApp());
+void main() => runApp(const SpeechSampleApp());
 
 class SpeechSampleApp extends StatefulWidget {
+  const SpeechSampleApp({super.key});
+
   @override
   _SpeechSampleAppState createState() => _SpeechSampleAppState();
 }
@@ -33,13 +38,13 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   String lastError = '';
   String chatGPTResponse = '';
   String lastStatus = '';
-  String _localeId = 'en-US';
+  final String _localeId = 'en-US';
   final SpeechToText speech = SpeechToText();
 
   @override
   void initState() {
     super.initState();
-    this.initSpeechState();
+    initSpeechState();
   }
 
   /// This initializes SpeechToText. That only has to be done
@@ -85,13 +90,9 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
           ),
           Expanded(
             flex: 4,
-            child: RecognitionResultsWidget(
-              lastWords: lastWords, level: level),
+            child: RecognitionResultsWidget(lastWords: lastWords, level: level),
           ),
-          Expanded(
-            flex: 4,
-            child: chatGPTResponseWidget(lastWords: lastWords)
-          )
+          Expanded(flex: 4, child: chatGPTResponseWidget(lastWords: lastWords))
         ]),
       ),
     );
@@ -104,8 +105,8 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
     lastError = '';
     speech.listen(
       onResult: resultListener,
-      listenFor: Duration(seconds: 30),
-      pauseFor: Duration(seconds: 3),
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3),
       partialResults: true,
       localeId: _localeId,
       onSoundLevelChange: soundLevelListener,
@@ -133,7 +134,7 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   /// available after `listen` is called.
   void resultListener(SpeechRecognitionResult result) {
     setState(() {
-      lastWords = '${result.recognizedWords}';
+      lastWords = result.recognizedWords;
     });
   }
 
@@ -153,7 +154,7 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
 
   void statusListener(String status) {
     setState(() {
-      lastStatus = '$status';
+      lastStatus = status;
     });
   }
 }
@@ -213,24 +214,24 @@ class SpeechControlWidget extends StatelessWidget {
       children: <Widget>[
         TextButton(
           onPressed: !hasSpeech || isListening ? null : startListening,
-          child: Text('Start'),
+          child: const Text('Start'),
         ),
         TextButton(
           onPressed: isListening ? stopListening : null,
-          child: Text('Stop'),
+          child: const Text('Stop'),
         ),
         TextButton(
           onPressed: isListening ? cancelListening : null,
-          child: Text('Cancel'),
+          child: const Text('Cancel'),
         )
       ],
     );
   }
 }
 
-
 class chatGPTResponseWidget extends StatefulWidget {
-  const chatGPTResponseWidget({Key? key, required this.lastWords}) : super(key: key);
+  const chatGPTResponseWidget({Key? key, required this.lastWords})
+      : super(key: key);
   final String lastWords;
 
   @override
@@ -258,7 +259,6 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
   bool get isWindows => !kIsWeb && Platform.isWindows;
   bool get isWeb => kIsWeb;
 
-
   @override
   void initState() {
     super.initState();
@@ -268,28 +268,27 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
 
   void updateParameter() {
     setState(() {
-      future = chatGPT(widget.lastWords + '.Please respond in 50 words or less.');
+      future =
+          chatGPT('${widget.lastWords}.Please respond in 50 words or less.');
       _newVoiceText = future;
       flutterTts.setVolume(volume);
       flutterTts.setSpeechRate(rate);
       flutterTts.setPitch(pitch);
 
       future.then((value) => flutterTts.speak(value));
-
-      
     });
   }
 
   Future<String> chatGPT(String text) async {
     print('chatGPT is called.');
-    final configuration = OpenAIConfiguration(apiKey: API_KEY as String);
+    const configuration = OpenAIConfiguration(apiKey: API_KEY);
     final client = OpenAIClient(
       configuration: configuration,
       enableLogging: true,
     );
 
     final chat = await client.chat.create(
-    model: 'gpt-3.5-turbo',
+      model: 'gpt-3.5-turbo',
       messages: [
         ChatMessage(
           role: 'user',
@@ -348,48 +347,30 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
     await flutterTts.awaitSpeakCompletion(true);
   }
 
-  // Future _speak() async {
-  //   await flutterTts.setVolume(volume);
-  //   await flutterTts.setSpeechRate(rate);
-  //   await flutterTts.setPitch(pitch);
-
-  //   await flutterTts.speak(_newVoiceText);
-
-    // if (_newVoiceText != null) {
-    //   if (_newVoiceText!.isNotEmpty) {
-    //     await flutterTts.speak(_newVoiceText!);
-    //   }
-    // }
-  // }
-
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ElevatedButton(
-          onPressed: () {
-            updateParameter();
-          },
-          child: Text('Send ChatGPT'),
-        ),
-        FutureBuilder<String>(
-          future: future,
-          builder: (context, snapshot) {
-            switch (snapshot.connectionState) {
-              case ConnectionState.none:
-                return const Text("none");
-              case ConnectionState.waiting:
-                return const Text("waiting");
-              case ConnectionState.active:
-                return const Text("active");
-              case ConnectionState.done:
-                return Text(snapshot.data!);
-            }
-          },
-        ),
-      ]
-    );
+    return Column(children: [
+      ElevatedButton(
+        onPressed: () {
+          updateParameter();
+        },
+        child: const Text('Send ChatGPT'),
+      ),
+      FutureBuilder<String>(
+        future: future,
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              return const Text("none");
+            case ConnectionState.waiting:
+              return const Text("waiting");
+            case ConnectionState.active:
+              return const Text("active");
+            case ConnectionState.done:
+              return Text(snapshot.data!);
+          }
+        },
+      ),
+    ]);
   }
 }
-
-
