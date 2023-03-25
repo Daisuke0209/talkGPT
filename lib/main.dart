@@ -6,6 +6,8 @@ import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import 'package:http/http.dart' as http;
+
 void main() => runApp(SpeechSampleApp());
 
 class SpeechSampleApp extends StatefulWidget {
@@ -35,6 +37,7 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   @override
   void initState() {
     super.initState();
+    this.initSpeechState();
   }
 
   /// This initializes SpeechToText. That only has to be done
@@ -42,6 +45,7 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   /// it also does nothing. The UX of the sample app ensures that
   /// it can only be called once.
   Future<void> initSpeechState() async {
+    print("initSpeechState");
     try {
       var hasSpeech = await speech.initialize(
         onError: errorListener,
@@ -69,11 +73,9 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
           title: const Text('Speech to Text Example'),
         ),
         body: Column(children: [
-          HeaderWidget(),
           Container(
             child: Column(
               children: <Widget>[
-                InitSpeechWidget(_hasSpeech, initSpeechState),
                 SpeechControlWidget(_hasSpeech, speech.isListening,
                     startListening, stopListening, cancelListening),
                 SessionOptionsWidget(
@@ -240,22 +242,6 @@ class RecognitionResultsWidget extends StatelessWidget {
   }
 }
 
-class HeaderWidget extends StatelessWidget {
-  const HeaderWidget({
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Speech recognition available',
-        style: TextStyle(fontSize: 22.0),
-      ),
-    );
-  }
-}
-
 /// Display the current error status from the speech
 /// recognizer
 class ErrorWidget extends StatelessWidget {
@@ -373,27 +359,6 @@ class SessionOptionsWidget extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class InitSpeechWidget extends StatelessWidget {
-  const InitSpeechWidget(this.hasSpeech, this.initSpeechState, {Key? key})
-      : super(key: key);
-
-  final bool hasSpeech;
-  final Future<void> Function() initSpeechState;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: <Widget>[
-        TextButton(
-          onPressed: hasSpeech ? null : initSpeechState,
-          child: Text('Initialize'),
-        ),
-      ],
     );
   }
 }
