@@ -92,10 +92,6 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
             flex: 4,
             child: RecognitionResultsWidget(lastWords: lastWords, level: level),
           ),
-          Expanded(
-            flex: 1,
-            child: ErrorWidget(lastError: lastError),
-          ),
           SpeechStatusWidget(speech: speech),
         ]),
       ),
@@ -236,34 +232,6 @@ class RecognitionResultsWidget extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Display the current error status from the speech
-/// recognizer
-class ErrorWidget extends StatelessWidget {
-  const ErrorWidget({
-    Key? key,
-    required this.lastError,
-  }) : super(key: key);
-
-  final String lastError;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Center(
-          child: Text(
-            'Error Status',
-            style: TextStyle(fontSize: 22.0),
-          ),
-        ),
-        Center(
-          child: Text(lastError),
         ),
       ],
     );
