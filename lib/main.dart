@@ -1,12 +1,19 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:openai_client/openai_client.dart';
+import 'package:openai_client/src/model/openai_chat/chat_message.dart';
 
 import 'package:http/http.dart' as http;
+
+import 'credential.dart';
+
 
 void main() => runApp(SpeechSampleApp());
 
@@ -15,9 +22,6 @@ class SpeechSampleApp extends StatefulWidget {
   _SpeechSampleAppState createState() => _SpeechSampleAppState();
 }
 
-/// An example that demonstrates the basic functionality of the
-/// SpeechToText plugin for using the speech recognition capability
-/// of the underlying platform.
 class _SpeechSampleAppState extends State<SpeechSampleApp> {
   bool _hasSpeech = false;
   double level = 0.0;
@@ -25,6 +29,7 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   double maxSoundLevel = -50000;
   String lastWords = '';
   String lastError = '';
+  String chatGPTResponse = '';
   String lastStatus = '';
   String _localeId = 'en-US';
   final SpeechToText speech = SpeechToText();
@@ -34,6 +39,7 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
     super.initState();
     this.initSpeechState();
   }
+  
 
   /// This initializes SpeechToText. That only has to be done
   /// once per application, though calling it again is harmless
@@ -78,8 +84,13 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
           ),
           Expanded(
             flex: 4,
-            child: RecognitionResultsWidget(lastWords: lastWords, level: level),
+            child: RecognitionResultsWidget(
+              lastWords: lastWords, level: level),
           ),
+          Expanded(
+            flex: 4,
+            child: chatGPTResponseWidget(lastWords: lastWords)
+          )
         ]),
       ),
     );
@@ -90,10 +101,6 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   void startListening() {
     lastWords = '';
     lastError = '';
-    // Note that `listenFor` is the maximum, not the minimun, on some
-    // systems recognition will be stopped before this value is reached.
-    // Similarly `pauseFor` is a maximum not a minimum and may be ignored
-    // on some devices.
     speech.listen(
       onResult: resultListener,
       listenFor: Duration(seconds: 30),
@@ -125,7 +132,7 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   /// available after `listen` is called.
   void resultListener(SpeechRecognitionResult result) {
     setState(() {
-      lastWords = '${result.recognizedWords} - ${result.finalResult}';
+      lastWords = '${result.recognizedWords}';
     });
   }
 
@@ -176,32 +183,7 @@ class RecognitionResultsWidget extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                 ),
-              ),
-              Positioned.fill(
-                bottom: 10,
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                            blurRadius: .26,
-                            spreadRadius: level * 1.5,
-                            color: Colors.black.withOpacity(.05))
-                      ],
-                      color: Colors.white,
-                      borderRadius: BorderRadius.all(Radius.circular(50)),
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.mic),
-                      onPressed: () => null,
-                    ),
-                  ),
-                ),
-              ),
+              )
             ],
           ),
         ),
@@ -244,3 +226,78 @@ class SpeechControlWidget extends StatelessWidget {
     );
   }
 }
+
+
+class chatGPTResponseWidget extends StatefulWidget {
+  const chatGPTResponseWidget({Key? key, required this.lastWords}) : super(key: key);
+  final String lastWords;
+
+  @override
+  State<chatGPTResponseWidget> createState() => chatGPTResponseState();
+}
+
+class chatGPTResponseState extends State<chatGPTResponseWidget> {
+  late Future<String> future;
+  @override
+  void initState() {
+    super.initState();
+    future = chatGPT('Please introduce yourself.');
+  }
+
+  void updateParameter() {
+    setState(() {
+      future = chatGPT(widget.lastWords + '.Please respond in 50 words or less.');
+    });
+  }
+
+  Future<String> chatGPT(String text) async {
+    print('chatGPT is called.');
+    final configuration = OpenAIConfiguration(apiKey: API_KEY as String);
+    final client = OpenAIClient(
+      configuration: configuration,
+      enableLogging: true,
+    );
+
+    final chat = await client.chat.create(
+    model: 'gpt-3.5-turbo',
+      messages: [
+        ChatMessage(
+          role: 'user',
+          content: text,
+        )
+      ],
+    ).data;
+    return chat.choices.first.message.content;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            updateParameter();
+          },
+          child: Text('Send ChatGPT'),
+        ),
+        FutureBuilder<String>(
+          future: future,
+          builder: (context, snapshot) {
+            switch (snapshot.connectionState) {
+              case ConnectionState.none:
+                return const Text("none");
+              case ConnectionState.waiting:
+                return const Text("waiting");
+              case ConnectionState.active:
+                return const Text("active");
+              case ConnectionState.done:
+                return Text(snapshot.data!);
+            }
+          },
+        )
+      ]
+    );
+  }
+}
+
+
