@@ -20,16 +20,16 @@ import 'credential.dart';
 
 enum TtsState { playing, stopped, paused, continued }
 
-void main() => runApp(const SpeechSampleApp());
+void main() => runApp(const talkGPTApp());
 
-class SpeechSampleApp extends StatefulWidget {
-  const SpeechSampleApp({super.key});
+class talkGPTApp extends StatefulWidget {
+  const talkGPTApp({super.key});
 
   @override
-  _SpeechSampleAppState createState() => _SpeechSampleAppState();
+  _talkGPTAppState createState() => _talkGPTAppState();
 }
 
-class _SpeechSampleAppState extends State<SpeechSampleApp> {
+class _talkGPTAppState extends State<talkGPTApp> {
   bool _hasSpeech = false;
   double level = 0.0;
   double minSoundLevel = 50000;
@@ -47,10 +47,6 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
     initSpeechState();
   }
 
-  /// This initializes SpeechToText. That only has to be done
-  /// once per application, though calling it again is harmless
-  /// it also does nothing. The UX of the sample app ensures that
-  /// it can only be called once.
   Future<void> initSpeechState() async {
     print("initSpeechState");
     try {
@@ -77,14 +73,14 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Speech to Text Example'),
+          title: const Text('talkGPT'),
         ),
         body: Column(children: [
           Container(
             child: Column(
               children: <Widget>[
                 SpeechControlWidget(_hasSpeech, speech.isListening,
-                    startListening, stopListening, cancelListening),
+                    startListening, stopListening),
               ],
             ),
           ),
@@ -98,8 +94,6 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
     );
   }
 
-  // This is called each time the users wants to start a new speech
-  // recognition session
   void startListening() {
     lastWords = '';
     lastError = '';
@@ -118,13 +112,6 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
 
   void stopListening() {
     speech.stop();
-    setState(() {
-      level = 0.0;
-    });
-  }
-
-  void cancelListening() {
-    speech.cancel();
     setState(() {
       level = 0.0;
     });
@@ -196,8 +183,8 @@ class RecognitionResultsWidget extends StatelessWidget {
 
 /// Controls to start and stop speech recognition
 class SpeechControlWidget extends StatelessWidget {
-  const SpeechControlWidget(this.hasSpeech, this.isListening,
-      this.startListening, this.stopListening, this.cancelListening,
+  const SpeechControlWidget(
+      this.hasSpeech, this.isListening, this.startListening, this.stopListening,
       {Key? key})
       : super(key: key);
 
@@ -205,7 +192,6 @@ class SpeechControlWidget extends StatelessWidget {
   final bool isListening;
   final void Function() startListening;
   final void Function() stopListening;
-  final void Function() cancelListening;
 
   @override
   Widget build(BuildContext context) {
@@ -219,10 +205,6 @@ class SpeechControlWidget extends StatelessWidget {
         TextButton(
           onPressed: isListening ? stopListening : null,
           child: const Text('Stop'),
-        ),
-        TextButton(
-          onPressed: isListening ? cancelListening : null,
-          child: const Text('Cancel'),
         )
       ],
     );
@@ -243,21 +225,12 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
   // For TTS
   late FlutterTts flutterTts;
   TtsState ttsState = TtsState.stopped;
-  double volume = 0.5;
+  double volume = 1.0;
   double pitch = 1.0;
   double rate = 0.5;
-  // String? _newVoiceText;
   late Future<String> _newVoiceText;
 
-  get isPlaying => ttsState == TtsState.playing;
-  get isStopped => ttsState == TtsState.stopped;
-  get isPaused => ttsState == TtsState.paused;
-  get isContinued => ttsState == TtsState.continued;
-
   bool get isIOS => !kIsWeb && Platform.isIOS;
-  bool get isAndroid => !kIsWeb && Platform.isAndroid;
-  bool get isWindows => !kIsWeb && Platform.isWindows;
-  bool get isWeb => kIsWeb;
 
   @override
   void initState() {
@@ -266,14 +239,11 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
     future = chatGPT('Please introduce yourself.');
   }
 
-  void updateParameter() {
+  void askchatGPT() {
     setState(() {
       future =
           chatGPT('${widget.lastWords}.Please respond in 50 words or less.');
       _newVoiceText = future;
-      flutterTts.setVolume(volume);
-      flutterTts.setSpeechRate(rate);
-      flutterTts.setPitch(pitch);
 
       future.then((value) => flutterTts.speak(value));
     });
@@ -301,46 +271,12 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
 
   initTts() {
     flutterTts = FlutterTts();
-
     flutterTts.setLanguage('en-US');
+    flutterTts.setVolume(volume);
+    flutterTts.setSpeechRate(rate);
+    flutterTts.setPitch(pitch);
 
     _setAwaitOptions();
-
-    flutterTts.setStartHandler(() {
-      setState(() {
-        print("Playing");
-        ttsState = TtsState.playing;
-      });
-    });
-
-    if (isAndroid) {
-      flutterTts.setInitHandler(() {
-        setState(() {
-          print("TTS Initialized");
-        });
-      });
-    }
-
-    flutterTts.setPauseHandler(() {
-      setState(() {
-        print("Paused");
-        ttsState = TtsState.paused;
-      });
-    });
-
-    flutterTts.setContinueHandler(() {
-      setState(() {
-        print("Continued");
-        ttsState = TtsState.continued;
-      });
-    });
-
-    flutterTts.setErrorHandler((msg) {
-      setState(() {
-        print("error: $msg");
-        ttsState = TtsState.stopped;
-      });
-    });
   }
 
   Future _setAwaitOptions() async {
@@ -352,7 +288,7 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
     return Column(children: [
       ElevatedButton(
         onPressed: () {
-          updateParameter();
+          askchatGPT();
         },
         child: const Text('Send ChatGPT'),
       ),
