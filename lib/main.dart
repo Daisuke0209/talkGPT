@@ -201,14 +201,28 @@ class SpeechControlWidget extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: <Widget>[
-        TextButton(
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            foregroundColor: Colors.white, backgroundColor: Colors.red.shade300, // foreground
+          ),
           onPressed: !hasSpeech || isListening ? null : startListening,
-          child: const Text('Start'),
+          child: const Text('はなす！'),
         ),
-        TextButton(
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            foregroundColor: Colors.white, backgroundColor: Colors.deepPurple.shade300, // foreground
+          ),
           onPressed: isListening ? stopListening : null,
-          child: const Text('Stop'),
+          child: const Text('とめる！'),
         )
+        // TextButton(
+        //   onPressed: !hasSpeech || isListening ? null : startListening,
+        //   child: const Text('Start'),
+        // ),
+        // TextButton(
+        //   onPressed: isListening ? stopListening : null,
+        //   child: const Text('Stop'),
+        // )
       ],
     );
   }
@@ -290,10 +304,13 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
   Widget build(BuildContext context) {
     return Column(children: [
       ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          foregroundColor: Colors.white, backgroundColor: Colors.red.shade300, // foreground
+        ),
         onPressed: () {
           askchatGPT();
         },
-        child: const Text('Send ChatGPT'),
+        child: const Text('きいてみる！'),
       ),
       FutureBuilder<String>(
         future: future,
@@ -302,7 +319,7 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
             case ConnectionState.none:
               return const Text("none");
             case ConnectionState.waiting:
-              return const Text("waiting");
+              return const Text("ちょっと待ってね");
             case ConnectionState.active:
               return const Text("active");
             case ConnectionState.done:
