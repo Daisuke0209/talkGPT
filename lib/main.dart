@@ -20,7 +20,7 @@ class SpeechSampleApp extends StatefulWidget {
 /// of the underlying platform.
 class _SpeechSampleAppState extends State<SpeechSampleApp> {
   bool _hasSpeech = false;
-  bool _onDevice = false;
+  // bool _onDevice = false;
   final TextEditingController _pauseForController =
       TextEditingController(text: '3');
   final TextEditingController _listenForController =
@@ -82,8 +82,8 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
                   _localeId,
                   _pauseForController,
                   _listenForController,
-                  _onDevice,
-                  _switchOnDevice,
+                  // _onDevice,
+                  // _switchOnDevice,
                 ),
               ],
             ),
@@ -118,7 +118,7 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
       onSoundLevelChange: soundLevelListener,
       cancelOnError: true,
       listenMode: ListenMode.confirmation,
-      onDevice: _onDevice,
+      // onDevice: _onDevice,
     );
     setState(() {});
   }
@@ -165,11 +165,11 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
     });
   }
 
-  void _switchOnDevice(bool? val) {
-    setState(() {
-      _onDevice = val ?? false;
-    });
-  }
+  // void _switchOnDevice(bool? val) {
+  //   setState(() {
+  //     _onDevice = val ?? false;
+  //   });
+  // }
 }
 
 /// Displays the most recently recognized words and the sound level.
@@ -278,16 +278,16 @@ class SessionOptionsWidget extends StatelessWidget {
       this.localeId,
       this.pauseForController,
       this.listenForController,
-      this.onDevice,
-      this.switchOnDevice,
+      // this.onDevice,
+      // this.switchOnDevice,
       {Key? key})
       : super(key: key);
 
   final String localeId;
-  final void Function(bool?) switchOnDevice;
+  // final void Function(bool?) switchOnDevice;
   final TextEditingController pauseForController;
   final TextEditingController listenForController;
-  final bool onDevice;
+  // final bool onDevice;
 
   @override
   Widget build(BuildContext context) {
@@ -316,15 +316,15 @@ class SessionOptionsWidget extends StatelessWidget {
                   )),
             ],
           ),
-          Row(
-            children: [
-              Text('On device: '),
-              Checkbox(
-                value: onDevice,
-                onChanged: switchOnDevice,
-              )
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     Text('On device: '),
+          //     Checkbox(
+          //       value: onDevice,
+          //       onChanged: switchOnDevice,
+          //     )
+          //   ],
+          // ),
         ],
       ),
     );
