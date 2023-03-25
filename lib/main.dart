@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:convert';
-import 'dart:io';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
@@ -9,11 +8,14 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:openai_client/openai_client.dart';
 import 'package:openai_client/src/model/openai_chat/chat_message.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:http/http.dart' as http;
 
 import 'credential.dart';
 
+enum TtsState { playing, stopped, paused, continued }
 
 void main() => runApp(SpeechSampleApp());
 
@@ -39,7 +41,6 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
     super.initState();
     this.initSpeechState();
   }
-  
 
   /// This initializes SpeechToText. That only has to be done
   /// once per application, though calling it again is harmless
@@ -238,15 +239,44 @@ class chatGPTResponseWidget extends StatefulWidget {
 
 class chatGPTResponseState extends State<chatGPTResponseWidget> {
   late Future<String> future;
+  // For TTS
+  late FlutterTts flutterTts;
+  TtsState ttsState = TtsState.stopped;
+  double volume = 0.5;
+  double pitch = 1.0;
+  double rate = 0.5;
+  // String? _newVoiceText;
+  late Future<String> _newVoiceText;
+
+  get isPlaying => ttsState == TtsState.playing;
+  get isStopped => ttsState == TtsState.stopped;
+  get isPaused => ttsState == TtsState.paused;
+  get isContinued => ttsState == TtsState.continued;
+
+  bool get isIOS => !kIsWeb && Platform.isIOS;
+  bool get isAndroid => !kIsWeb && Platform.isAndroid;
+  bool get isWindows => !kIsWeb && Platform.isWindows;
+  bool get isWeb => kIsWeb;
+
+
   @override
   void initState() {
     super.initState();
+    initTts();
     future = chatGPT('Please introduce yourself.');
   }
 
   void updateParameter() {
     setState(() {
       future = chatGPT(widget.lastWords + '.Please respond in 50 words or less.');
+      _newVoiceText = future;
+      flutterTts.setVolume(volume);
+      flutterTts.setSpeechRate(rate);
+      flutterTts.setPitch(pitch);
+
+      future.then((value) => flutterTts.speak(value));
+
+      
     });
   }
 
@@ -269,6 +299,68 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
     ).data;
     return chat.choices.first.message.content;
   }
+
+  initTts() {
+    flutterTts = FlutterTts();
+
+    flutterTts.setLanguage('en-US');
+
+    _setAwaitOptions();
+
+    flutterTts.setStartHandler(() {
+      setState(() {
+        print("Playing");
+        ttsState = TtsState.playing;
+      });
+    });
+
+    if (isAndroid) {
+      flutterTts.setInitHandler(() {
+        setState(() {
+          print("TTS Initialized");
+        });
+      });
+    }
+
+    flutterTts.setPauseHandler(() {
+      setState(() {
+        print("Paused");
+        ttsState = TtsState.paused;
+      });
+    });
+
+    flutterTts.setContinueHandler(() {
+      setState(() {
+        print("Continued");
+        ttsState = TtsState.continued;
+      });
+    });
+
+    flutterTts.setErrorHandler((msg) {
+      setState(() {
+        print("error: $msg");
+        ttsState = TtsState.stopped;
+      });
+    });
+  }
+
+  Future _setAwaitOptions() async {
+    await flutterTts.awaitSpeakCompletion(true);
+  }
+
+  // Future _speak() async {
+  //   await flutterTts.setVolume(volume);
+  //   await flutterTts.setSpeechRate(rate);
+  //   await flutterTts.setPitch(pitch);
+
+  //   await flutterTts.speak(_newVoiceText);
+
+    // if (_newVoiceText != null) {
+    //   if (_newVoiceText!.isNotEmpty) {
+    //     await flutterTts.speak(_newVoiceText!);
+    //   }
+    // }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -294,7 +386,7 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
                 return Text(snapshot.data!);
             }
           },
-        )
+        ),
       ]
     );
   }

@@ -38,6 +38,7 @@ dependencies:
   speech_to_text: ^6.1.1
   http: ^0.13.5
   openai_client: ^0.0.7
+  flutter_tts: ^3.6.3
 
 dev_dependencies:
   flutter_test:
