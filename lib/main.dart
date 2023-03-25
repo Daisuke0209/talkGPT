@@ -20,10 +20,6 @@ class SpeechSampleApp extends StatefulWidget {
 /// of the underlying platform.
 class _SpeechSampleAppState extends State<SpeechSampleApp> {
   bool _hasSpeech = false;
-  final TextEditingController _pauseForController =
-      TextEditingController(text: '3');
-  final TextEditingController _listenForController =
-      TextEditingController(text: '30');
   double level = 0.0;
   double minSoundLevel = 50000;
   double maxSoundLevel = -50000;
@@ -77,11 +73,6 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
               children: <Widget>[
                 SpeechControlWidget(_hasSpeech, speech.isListening,
                     startListening, stopListening, cancelListening),
-                SessionOptionsWidget(
-                  _localeId,
-                  _pauseForController,
-                  _listenForController,
-                ),
               ],
             ),
           ),
@@ -89,7 +80,6 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
             flex: 4,
             child: RecognitionResultsWidget(lastWords: lastWords, level: level),
           ),
-          SpeechStatusWidget(speech: speech),
         ]),
       ),
     );
@@ -100,16 +90,14 @@ class _SpeechSampleAppState extends State<SpeechSampleApp> {
   void startListening() {
     lastWords = '';
     lastError = '';
-    final pauseFor = int.tryParse(_pauseForController.text);
-    final listenFor = int.tryParse(_listenForController.text);
     // Note that `listenFor` is the maximum, not the minimun, on some
     // systems recognition will be stopped before this value is reached.
     // Similarly `pauseFor` is a maximum not a minimum and may be ignored
     // on some devices.
     speech.listen(
       onResult: resultListener,
-      listenFor: Duration(seconds: listenFor ?? 30),
-      pauseFor: Duration(seconds: pauseFor ?? 3),
+      listenFor: Duration(seconds: 30),
+      pauseFor: Duration(seconds: 3),
       partialResults: true,
       localeId: _localeId,
       onSoundLevelChange: soundLevelListener,
@@ -177,12 +165,6 @@ class RecognitionResultsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
-        Center(
-          child: Text(
-            'Recognized Words',
-            style: TextStyle(fontSize: 22.0),
-          ),
-        ),
         Expanded(
           child: Stack(
             children: <Widget>[
@@ -259,80 +241,6 @@ class SpeechControlWidget extends StatelessWidget {
           child: Text('Cancel'),
         )
       ],
-    );
-  }
-}
-
-class SessionOptionsWidget extends StatelessWidget {
-  const SessionOptionsWidget(
-      this.localeId,
-      this.pauseForController,
-      this.listenForController,
-      {Key? key})
-      : super(key: key);
-
-  final String localeId;
-  final TextEditingController pauseForController;
-  final TextEditingController listenForController;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          Row(
-            children: [
-              Text('pauseFor: '),
-              Container(
-                  padding: EdgeInsets.only(left: 8),
-                  width: 80,
-                  child: TextFormField(
-                    controller: pauseForController,
-                  )),
-              Container(
-                  padding: EdgeInsets.only(left: 16),
-                  child: Text('listenFor: ')),
-              Container(
-                  padding: EdgeInsets.only(left: 8),
-                  width: 80,
-                  child: TextFormField(
-                    controller: listenForController,
-                  )),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Display the current status of the listener
-class SpeechStatusWidget extends StatelessWidget {
-  const SpeechStatusWidget({
-    Key? key,
-    required this.speech,
-  }) : super(key: key);
-
-  final SpeechToText speech;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 20),
-      color: Theme.of(context).backgroundColor,
-      child: Center(
-        child: speech.isListening
-            ? Text(
-                "I'm listening...",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              )
-            : Text(
-                'Not listening',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-      ),
     );
   }
 }
