@@ -203,14 +203,16 @@ class SpeechControlWidget extends StatelessWidget {
       children: <Widget>[
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white, backgroundColor: Colors.red.shade300, // foreground
+            foregroundColor: Colors.white,
+            backgroundColor: Colors.red.shade300, // foreground
           ),
           onPressed: !hasSpeech || isListening ? null : startListening,
           child: const Text('はなす！'),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white, backgroundColor: Colors.deepPurple.shade300, // foreground
+            foregroundColor: Colors.white,
+            backgroundColor: Colors.deepPurple.shade300, // foreground
           ),
           onPressed: isListening ? stopListening : null,
           child: const Text('とめる！'),
@@ -242,7 +244,7 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
   // For TTS
   late FlutterTts flutterTts;
   TtsState ttsState = TtsState.stopped;
-  double volume = 1.0;
+  double volume = 2.0;
   double pitch = 1.0;
   double rate = 0.5;
   late Future<String> _newVoiceText;
@@ -253,13 +255,13 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
   void initState() {
     super.initState();
     initTts();
-    future = chatGPT('Please introduce yourself.');
+    future = chatGPT('Please introduce yourself in 20 words or less.');
   }
 
   void askchatGPT() {
     setState(() {
-      future =
-          chatGPT('${widget.lastWords}.Please respond in 50 words or less.');
+      future = chatGPT(
+          '${widget.lastWords}.You are a 20 year old American woman. Tell us what you think and ask questions. However, it should not exceed 20 words.');
       _newVoiceText = future;
 
       future.then((value) => flutterTts.speak(value));
@@ -288,6 +290,8 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
 
   initTts() {
     flutterTts = FlutterTts();
+    flutterTts.setIosAudioCategory(IosTextToSpeechAudioCategory.playback,
+        [IosTextToSpeechAudioCategoryOptions.defaultToSpeaker]);
     flutterTts.setLanguage('en-US');
     flutterTts.setVolume(volume);
     flutterTts.setSpeechRate(rate);
@@ -305,7 +309,8 @@ class chatGPTResponseState extends State<chatGPTResponseWidget> {
     return Column(children: [
       ElevatedButton(
         style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white, backgroundColor: Colors.red.shade300, // foreground
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.red.shade300, // foreground
         ),
         onPressed: () {
           askchatGPT();
